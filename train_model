@@ -1,7 +1,5 @@
-# train_model_colab.py
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.models import Model
@@ -9,18 +7,15 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from sklearn.utils.class_weight import compute_class_weight
+import matplotlib.pyplot as plt
 
-# Mount Google Drive (khusus di Google Colab)
-from google.colab import drive
-drive.mount('/content/drive')
-
-# Konfigurasi path dari Google Drive
-GDRIVE_PATH = "/content/drive/MyDrive/dataset_banana"  # Ganti sesuai lokasi dataset kamu di GDrive
+# Link Dataset = https://drive.google.com/drive/folders/1PljDJGKqGCXec9m1zarj2BAE87m2YUKu?usp=drive_link
 
 # Config
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 16
 EPOCHS = 15
+DATASET_PATH = "dataset_banana"
 
 # Data generators
 train_gen = ImageDataGenerator(rescale=1./255,
@@ -29,13 +24,13 @@ train_gen = ImageDataGenerator(rescale=1./255,
 
 val_gen = ImageDataGenerator(rescale=1./255)
 
-train_data = train_gen.flow_from_directory(os.path.join(GDRIVE_PATH, "train"),
+train_data = train_gen.flow_from_directory(os.path.join(DATASET_PATH, "train"),
     target_size=IMG_SIZE, batch_size=BATCH_SIZE, class_mode='categorical')
 
-val_data = val_gen.flow_from_directory(os.path.join(GDRIVE_PATH, "val"),
+val_data = val_gen.flow_from_directory(os.path.join(DATASET_PATH, "val"),
     target_size=IMG_SIZE, batch_size=BATCH_SIZE, class_mode='categorical')
 
-# Class weights
+# Class weight
 y_train = train_data.classes
 class_weights = compute_class_weight(class_weight='balanced',
                                      classes=np.unique(y_train),
@@ -58,7 +53,6 @@ model.compile(optimizer=Adam(1e-4), loss='categorical_crossentropy', metrics=['a
 # Training awal
 callbacks = [EarlyStopping(patience=5, restore_best_weights=True),
              ReduceLROnPlateau(factor=0.5, patience=3)]
-
 history = model.fit(train_data, validation_data=val_data, epochs=EPOCHS,
                     callbacks=callbacks, class_weight=class_weights)
 
@@ -71,12 +65,11 @@ model.compile(optimizer=Adam(1e-5), loss='categorical_crossentropy', metrics=['a
 model.fit(train_data, validation_data=val_data, epochs=10,
           callbacks=callbacks, class_weight=class_weights)
 
-# Save model ke Google Drive
-MODEL_PATH = "/content/drive/MyDrive/banana_ripeness_model.keras"
-model.save(MODEL_PATH)
-print(f"✅ Model saved at: {MODEL_PATH}")
+# Save model
+model.save("banana_ripeness_model.keras")
+print("✅ Model saved as 'banana_ripeness_model.keras'")
 
-# Plot akurasi
+# Optional: plot
 plt.plot(history.history['accuracy'], label='Train')
 plt.plot(history.history['val_accuracy'], label='Val')
 plt.legend()
